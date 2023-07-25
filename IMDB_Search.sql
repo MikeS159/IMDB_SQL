@@ -95,21 +95,43 @@ WHERE tp.category = 'director'
 GROUP BY nb.nconst, nb.primaryname
 order by num_roles desc;
 
-SELECT nb.nconst, nb.primaryname, COUNT(tp.nconst) AS num_roles, AVG(tr.averagerating) AS avg_rating
-into all_actors
+SELECT nb.nconst, nb.primaryname, COUNT(tp.nconst) AS num_roles, AVG("IMDB"."Your Rating") AS avg_rating
 FROM name_basics nb
 JOIN title_principals tp ON nb.nconst = tp.nconst
-JOIN title_ratings tr ON tp.tconst = tr.tconst
-WHERE tp.category = 'actor'
+JOIN "IMDB" ON tp.tconst = "IMDB".const
+WHERE tp.category = 'composer'
 GROUP BY nb.nconst, nb.primaryname
 order by num_roles desc;
 
-SELECT nb.nconst, nb.primaryname, COUNT(tp.nconst) AS num_roles, AVG(tr.averagerating) AS avg_rating
-into all_directors
+SELECT nb.nconst, nb.primaryname, COUNT(tp.nconst) AS num_roles, AVG("IMDB"."Your Rating") AS avg_rating
 FROM name_basics nb
 JOIN title_principals tp ON nb.nconst = tp.nconst
-JOIN title_ratings tr ON tp.tconst = tr.tconst
-WHERE tp.category = 'director'
+JOIN "IMDB" ON tp.tconst = "IMDB".const
+WHERE tp.category = 'writer'
+GROUP BY nb.nconst, nb.primaryname
+order by num_roles desc;
+
+SELECT nb.nconst, nb.primaryname, COUNT(tp.nconst) AS num_roles, AVG("IMDB"."Your Rating") AS avg_rating
+FROM name_basics nb
+JOIN title_principals tp ON nb.nconst = tp.nconst
+JOIN "IMDB" ON tp.tconst = "IMDB".const
+WHERE tp.category = 'producer'
+GROUP BY nb.nconst, nb.primaryname
+order by num_roles desc;
+
+SELECT nb.nconst, nb.primaryname, COUNT(tp.nconst) AS num_roles, AVG("IMDB"."Your Rating") AS avg_rating
+FROM name_basics nb
+JOIN title_principals tp ON nb.nconst = tp.nconst
+JOIN "IMDB" ON tp.tconst = "IMDB".const
+WHERE tp.category = 'editor'
+GROUP BY nb.nconst, nb.primaryname
+order by num_roles desc;
+
+SELECT nb.nconst, nb.primaryname, COUNT(tp.nconst) AS num_roles, AVG("IMDB"."Your Rating") AS avg_rating
+FROM name_basics nb
+JOIN title_principals tp ON nb.nconst = tp.nconst
+JOIN "IMDB" ON tp.tconst = "IMDB".const
+WHERE tp.category = 'cinematographer'
 GROUP BY nb.nconst, nb.primaryname
 order by num_roles desc;
 
