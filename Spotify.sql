@@ -36,6 +36,235 @@ select round((sum(ms_played)/60000),0) as mins, episode_show_name from spotify_d
 
 select round((sum(ms_played)/60000),0) as mins, audiobook_title from spotify_data_full sdf group by audiobook_title order by mins desc;
 
+
+/*Podcasts by year*/
+SELECT episode_show_name,
+	ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) BETWEEN 2013 AND 2025) / 60000, 0) AS total_mins,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2020) / 60000, 0), 0) AS mins_2020,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2021) / 60000, 0), 0) AS mins_2021,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2022) / 60000, 0), 0) AS mins_2022,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2023) / 60000, 0), 0) AS mins_2023,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2024) / 60000, 0), 0) AS mins_2024,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2025) / 60000, 0), 0) AS mins_2025
+FROM spotify_data_full
+GROUP BY episode_show_name
+ORDER BY total_mins DESC;
+
+/*Show position by year*/
+WITH ranked AS (
+        SELECT
+            episode_show_name,
+            EXTRACT(YEAR FROM ts::timestamp)::int AS year,
+            SUM(ms_played)/60000 AS mins,
+            RANK() OVER (
+                PARTITION BY EXTRACT(YEAR FROM ts::timestamp)
+                ORDER BY SUM(ms_played)/60000 DESC
+            ) AS position
+        FROM spotify_data_full
+        WHERE EXTRACT(YEAR FROM ts::timestamp)::int BETWEEN 2020 AND 2025
+        GROUP BY episode_show_name, EXTRACT(YEAR FROM ts::timestamp)
+    ),
+    max_rank_per_year AS (
+        SELECT year, MAX(position) AS max_position
+        FROM ranked
+        GROUP BY year
+    )
+    SELECT
+        episode_show_name,
+ROUND((COALESCE(MAX(CASE WHEN year = 2020 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2020) +1 ) + COALESCE(MAX(CASE WHEN year = 2021 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2021) +1 ) + COALESCE(MAX(CASE WHEN year = 2022 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2022) +1 ) + COALESCE(MAX(CASE WHEN year = 2023 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2023) +1 ) + COALESCE(MAX(CASE WHEN year = 2024 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2024) +1 ) + COALESCE(MAX(CASE WHEN year = 2025 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2025) +1 ))::numeric / 6,2) AS avg_position,
+COALESCE(MAX(CASE WHEN year = 2020 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2020) +1 ) AS pos_2020,
+COALESCE(MAX(CASE WHEN year = 2021 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2021) +1 ) AS pos_2021,
+COALESCE(MAX(CASE WHEN year = 2022 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2022) +1 ) AS pos_2022,
+COALESCE(MAX(CASE WHEN year = 2023 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2023) +1 ) AS pos_2023,
+COALESCE(MAX(CASE WHEN year = 2024 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2024) +1 ) AS pos_2024,
+COALESCE(MAX(CASE WHEN year = 2025 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2025) +1 ) AS pos_2025
+    FROM ranked
+    GROUP BY episode_show_name
+    ORDER BY avg_position ASC;
+
+
+/*Artists by year*/
+SELECT master_metadata_album_artist_name,
+	ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) BETWEEN 2013 AND 2025) / 60000, 0) AS total_mins,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2013) / 60000, 0), 0) AS mins_2013,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2014) / 60000, 0), 0) AS mins_2014,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2015) / 60000, 0), 0) AS mins_2015,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2016) / 60000, 0), 0) AS mins_2016,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2017) / 60000, 0), 0) AS mins_2017,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2018) / 60000, 0), 0) AS mins_2018,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2019) / 60000, 0), 0) AS mins_2019,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2020) / 60000, 0), 0) AS mins_2020,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2021) / 60000, 0), 0) AS mins_2021,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2022) / 60000, 0), 0) AS mins_2022,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2023) / 60000, 0), 0) AS mins_2023,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2024) / 60000, 0), 0) AS mins_2024,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2025) / 60000, 0), 0) AS mins_2025
+FROM spotify_data_full
+GROUP BY master_metadata_album_artist_name
+ORDER BY total_mins DESC;
+
+/*Artist rank per year*/
+WITH ranked AS (
+        SELECT
+            master_metadata_album_artist_name,
+            EXTRACT(YEAR FROM ts::timestamp)::int AS year,
+            SUM(ms_played)/60000 AS mins,
+            RANK() OVER (
+                PARTITION BY EXTRACT(YEAR FROM ts::timestamp)
+                ORDER BY SUM(ms_played)/60000 DESC
+            ) AS position
+        FROM spotify_data_full
+        WHERE EXTRACT(YEAR FROM ts::timestamp)::int BETWEEN 2013 AND 2025
+        GROUP BY master_metadata_album_artist_name, EXTRACT(YEAR FROM ts::timestamp)
+    ),
+    max_rank_per_year AS (
+        SELECT year, MAX(position) AS max_position
+        FROM ranked
+        GROUP BY year
+    )
+    SELECT
+        master_metadata_album_artist_name,
+ROUND((COALESCE(MAX(CASE WHEN year = 2013 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2013) +1 ) + COALESCE(MAX(CASE WHEN year = 2014 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2014) +1 ) + COALESCE(MAX(CASE WHEN year = 2015 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2015) +1 ) + COALESCE(MAX(CASE WHEN year = 2016 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2016) +1 ) + COALESCE(MAX(CASE WHEN year = 2017 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2017) +1 ) + COALESCE(MAX(CASE WHEN year = 2018 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2018) +1 ) + COALESCE(MAX(CASE WHEN year = 2019 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2019) +1 ) + COALESCE(MAX(CASE WHEN year = 2020 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2020) +1 ) + COALESCE(MAX(CASE WHEN year = 2021 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2021) +1 ) + COALESCE(MAX(CASE WHEN year = 2022 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2022) +1 ) + COALESCE(MAX(CASE WHEN year = 2023 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2023) +1 ) + COALESCE(MAX(CASE WHEN year = 2024 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2024) +1 ) + COALESCE(MAX(CASE WHEN year = 2025 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2025) +1 ))::numeric / 13,2) AS avg_position,
+COALESCE(MAX(CASE WHEN year = 2013 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2013) +1 ) AS pos_2013,
+COALESCE(MAX(CASE WHEN year = 2014 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2014) +1 ) AS pos_2014,
+COALESCE(MAX(CASE WHEN year = 2015 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2015) +1 ) AS pos_2015,
+COALESCE(MAX(CASE WHEN year = 2016 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2016) +1 ) AS pos_2016,
+COALESCE(MAX(CASE WHEN year = 2017 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2017) +1 ) AS pos_2017,
+COALESCE(MAX(CASE WHEN year = 2018 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2018) +1 ) AS pos_2018,
+COALESCE(MAX(CASE WHEN year = 2019 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2019) +1 ) AS pos_2019,
+COALESCE(MAX(CASE WHEN year = 2020 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2020) +1 ) AS pos_2020,
+COALESCE(MAX(CASE WHEN year = 2021 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2021) +1 ) AS pos_2021,
+COALESCE(MAX(CASE WHEN year = 2022 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2022) +1 ) AS pos_2022,
+COALESCE(MAX(CASE WHEN year = 2023 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2023) +1 ) AS pos_2023,
+COALESCE(MAX(CASE WHEN year = 2024 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2024) +1 ) AS pos_2024,
+COALESCE(MAX(CASE WHEN year = 2025 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2025) +1 ) AS pos_2025
+    FROM ranked
+    GROUP BY master_metadata_album_artist_name
+    ORDER BY avg_position ASC;
+
+
+/*Album by year*/
+SELECT master_metadata_album_album_name, master_metadata_album_artist_name,
+	ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) BETWEEN 2013 AND 2025) / 60000, 0) AS total_mins,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2013) / 60000, 0), 0) AS mins_2013,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2014) / 60000, 0), 0) AS mins_2014,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2015) / 60000, 0), 0) AS mins_2015,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2016) / 60000, 0), 0) AS mins_2016,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2017) / 60000, 0), 0) AS mins_2017,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2018) / 60000, 0), 0) AS mins_2018,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2019) / 60000, 0), 0) AS mins_2019,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2020) / 60000, 0), 0) AS mins_2020,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2021) / 60000, 0), 0) AS mins_2021,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2022) / 60000, 0), 0) AS mins_2022,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2023) / 60000, 0), 0) AS mins_2023,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2024) / 60000, 0), 0) AS mins_2024,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2025) / 60000, 0), 0) AS mins_2025
+FROM spotify_data_full
+GROUP BY master_metadata_album_album_name, master_metadata_album_artist_name
+ORDER BY total_mins DESC;
+
+/*Album rank per year*/
+WITH ranked AS (
+        SELECT
+            master_metadata_album_album_name, master_metadata_album_artist_name,
+            EXTRACT(YEAR FROM ts::timestamp)::int AS year,
+            SUM(ms_played)/60000 AS mins,
+            RANK() OVER (
+                PARTITION BY EXTRACT(YEAR FROM ts::timestamp)
+                ORDER BY SUM(ms_played)/60000 DESC
+            ) AS position
+        FROM spotify_data_full
+        WHERE EXTRACT(YEAR FROM ts::timestamp)::int BETWEEN 2013 AND 2025
+        GROUP BY master_metadata_album_album_name, master_metadata_album_artist_name, EXTRACT(YEAR FROM ts::timestamp)
+    ),
+    max_rank_per_year AS (
+        SELECT year, MAX(position) AS max_position
+        FROM ranked
+        GROUP BY year
+    )
+    SELECT
+        master_metadata_album_album_name, master_metadata_album_artist_name,
+ROUND((COALESCE(MAX(CASE WHEN year = 2013 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2013) +1 ) + COALESCE(MAX(CASE WHEN year = 2014 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2014) +1 ) + COALESCE(MAX(CASE WHEN year = 2015 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2015) +1 ) + COALESCE(MAX(CASE WHEN year = 2016 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2016) +1 ) + COALESCE(MAX(CASE WHEN year = 2017 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2017) +1 ) + COALESCE(MAX(CASE WHEN year = 2018 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2018) +1 ) + COALESCE(MAX(CASE WHEN year = 2019 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2019) +1 ) + COALESCE(MAX(CASE WHEN year = 2020 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2020) +1 ) + COALESCE(MAX(CASE WHEN year = 2021 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2021) +1 ) + COALESCE(MAX(CASE WHEN year = 2022 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2022) +1 ) + COALESCE(MAX(CASE WHEN year = 2023 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2023) +1 ) + COALESCE(MAX(CASE WHEN year = 2024 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2024) +1 ) + COALESCE(MAX(CASE WHEN year = 2025 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2025) +1 ))::numeric / 13,2) AS avg_position,
+COALESCE(MAX(CASE WHEN year = 2013 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2013) +1 ) AS pos_2013,
+COALESCE(MAX(CASE WHEN year = 2014 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2014) +1 ) AS pos_2014,
+COALESCE(MAX(CASE WHEN year = 2015 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2015) +1 ) AS pos_2015,
+COALESCE(MAX(CASE WHEN year = 2016 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2016) +1 ) AS pos_2016,
+COALESCE(MAX(CASE WHEN year = 2017 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2017) +1 ) AS pos_2017,
+COALESCE(MAX(CASE WHEN year = 2018 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2018) +1 ) AS pos_2018,
+COALESCE(MAX(CASE WHEN year = 2019 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2019) +1 ) AS pos_2019,
+COALESCE(MAX(CASE WHEN year = 2020 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2020) +1 ) AS pos_2020,
+COALESCE(MAX(CASE WHEN year = 2021 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2021) +1 ) AS pos_2021,
+COALESCE(MAX(CASE WHEN year = 2022 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2022) +1 ) AS pos_2022,
+COALESCE(MAX(CASE WHEN year = 2023 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2023) +1 ) AS pos_2023,
+COALESCE(MAX(CASE WHEN year = 2024 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2024) +1 ) AS pos_2024,
+COALESCE(MAX(CASE WHEN year = 2025 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2025) +1 ) AS pos_2025
+    FROM ranked
+    GROUP BY master_metadata_album_album_name, master_metadata_album_artist_name
+    ORDER BY avg_position ASC;
+
+
+
+/*Track by year*/
+SELECT master_metadata_track_name, master_metadata_album_artist_name,
+	ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) BETWEEN 2013 AND 2025) / 60000, 0) AS total_mins,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2013) / 60000, 0), 0) AS mins_2013,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2014) / 60000, 0), 0) AS mins_2014,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2015) / 60000, 0), 0) AS mins_2015,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2016) / 60000, 0), 0) AS mins_2016,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2017) / 60000, 0), 0) AS mins_2017,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2018) / 60000, 0), 0) AS mins_2018,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2019) / 60000, 0), 0) AS mins_2019,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2020) / 60000, 0), 0) AS mins_2020,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2021) / 60000, 0), 0) AS mins_2021,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2022) / 60000, 0), 0) AS mins_2022,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2023) / 60000, 0), 0) AS mins_2023,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2024) / 60000, 0), 0) AS mins_2024,
+    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2025) / 60000, 0), 0) AS mins_2025
+FROM spotify_data_full
+GROUP BY master_metadata_track_name, master_metadata_album_artist_name
+ORDER BY total_mins DESC;
+
+/*Track rank per year*/
+WITH ranked AS (
+        SELECT
+            master_metadata_track_name, master_metadata_album_artist_name,
+            EXTRACT(YEAR FROM ts::timestamp)::int AS year,
+            SUM(ms_played)/60000 AS mins,
+            RANK() OVER (
+                PARTITION BY EXTRACT(YEAR FROM ts::timestamp)
+                ORDER BY SUM(ms_played)/60000 DESC
+            ) AS position
+        FROM spotify_data_full
+        WHERE EXTRACT(YEAR FROM ts::timestamp)::int BETWEEN 2013 AND 2025
+        GROUP BY master_metadata_track_name, master_metadata_album_artist_name, EXTRACT(YEAR FROM ts::timestamp)
+    ),
+    max_rank_per_year AS (
+        SELECT year, MAX(position) AS max_position
+        FROM ranked
+        GROUP BY year
+    )
+    SELECT
+        master_metadata_track_name, master_metadata_album_artist_name,
+ROUND((COALESCE(MAX(CASE WHEN year = 2013 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2013) +1 ) + COALESCE(MAX(CASE WHEN year = 2014 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2014) +1 ) + COALESCE(MAX(CASE WHEN year = 2015 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2015) +1 ) + COALESCE(MAX(CASE WHEN year = 2016 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2016) +1 ) + COALESCE(MAX(CASE WHEN year = 2017 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2017) +1 ) + COALESCE(MAX(CASE WHEN year = 2018 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2018) +1 ) + COALESCE(MAX(CASE WHEN year = 2019 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2019) +1 ) + COALESCE(MAX(CASE WHEN year = 2020 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2020) +1 ) + COALESCE(MAX(CASE WHEN year = 2021 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2021) +1 ) + COALESCE(MAX(CASE WHEN year = 2022 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2022) +1 ) + COALESCE(MAX(CASE WHEN year = 2023 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2023) +1 ) + COALESCE(MAX(CASE WHEN year = 2024 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2024) +1 ) + COALESCE(MAX(CASE WHEN year = 2025 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2025) +1 ))::numeric / 13,2) AS avg_position,
+COALESCE(MAX(CASE WHEN year = 2013 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2013) +1 ) AS pos_2013,
+COALESCE(MAX(CASE WHEN year = 2014 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2014) +1 ) AS pos_2014,
+COALESCE(MAX(CASE WHEN year = 2015 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2015) +1 ) AS pos_2015,
+COALESCE(MAX(CASE WHEN year = 2016 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2016) +1 ) AS pos_2016,
+COALESCE(MAX(CASE WHEN year = 2017 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2017) +1 ) AS pos_2017,
+COALESCE(MAX(CASE WHEN year = 2018 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2018) +1 ) AS pos_2018,
+COALESCE(MAX(CASE WHEN year = 2019 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2019) +1 ) AS pos_2019,
+COALESCE(MAX(CASE WHEN year = 2020 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2020) +1 ) AS pos_2020,
+COALESCE(MAX(CASE WHEN year = 2021 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2021) +1 ) AS pos_2021,
+COALESCE(MAX(CASE WHEN year = 2022 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2022) +1 ) AS pos_2022,
+COALESCE(MAX(CASE WHEN year = 2023 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2023) +1 ) AS pos_2023,
+COALESCE(MAX(CASE WHEN year = 2024 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2024) +1 ) AS pos_2024,
+COALESCE(MAX(CASE WHEN year = 2025 THEN position END), (SELECT max_position FROM max_rank_per_year WHERE year = 2025) +1 ) AS pos_2025
+    FROM ranked
+    GROUP BY master_metadata_track_name, master_metadata_album_artist_name
+    ORDER BY avg_position ASC;
+
+
+
 /*Generate SQL for year ranges*/
 WITH years AS (
     SELECT generate_series(2013, 2025) AS y
@@ -62,93 +291,7 @@ SELECT
 FROM years;
 
 
-/*Podcasts by year*/
-SELECT episode_show_name,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2013) / 60000, 0), 0) AS mins_2013,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2014) / 60000, 0), 0) AS mins_2014,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2015) / 60000, 0), 0) AS mins_2015,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2016) / 60000, 0), 0) AS mins_2016,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2017) / 60000, 0), 0) AS mins_2017,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2018) / 60000, 0), 0) AS mins_2018,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2019) / 60000, 0), 0) AS mins_2019,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2020) / 60000, 0), 0) AS mins_2020,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2021) / 60000, 0), 0) AS mins_2021,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2022) / 60000, 0), 0) AS mins_2022,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2023) / 60000, 0), 0) AS mins_2023,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2024) / 60000, 0), 0) AS mins_2024,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2025) / 60000, 0), 0) AS mins_2025,
-    ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) BETWEEN 2013 AND 2025) / 60000, 0) AS total_mins
-FROM spotify_data_full
-GROUP BY episode_show_name
-ORDER BY total_mins DESC;
-
-/*Artists by year*/
-SELECT master_metadata_album_artist_name,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2013) / 60000, 0), 0) AS mins_2013,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2014) / 60000, 0), 0) AS mins_2014,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2015) / 60000, 0), 0) AS mins_2015,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2016) / 60000, 0), 0) AS mins_2016,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2017) / 60000, 0), 0) AS mins_2017,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2018) / 60000, 0), 0) AS mins_2018,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2019) / 60000, 0), 0) AS mins_2019,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2020) / 60000, 0), 0) AS mins_2020,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2021) / 60000, 0), 0) AS mins_2021,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2022) / 60000, 0), 0) AS mins_2022,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2023) / 60000, 0), 0) AS mins_2023,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2024) / 60000, 0), 0) AS mins_2024,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2025) / 60000, 0), 0) AS mins_2025,
-    ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) BETWEEN 2013 AND 2025) / 60000, 0) AS total_mins
-FROM spotify_data_full
-GROUP BY master_metadata_album_artist_name
-ORDER BY total_mins DESC;
-
-
-/*Album by year*/
-SELECT master_metadata_album_album_name,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2013) / 60000, 0), 0) AS mins_2013,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2014) / 60000, 0), 0) AS mins_2014,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2015) / 60000, 0), 0) AS mins_2015,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2016) / 60000, 0), 0) AS mins_2016,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2017) / 60000, 0), 0) AS mins_2017,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2018) / 60000, 0), 0) AS mins_2018,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2019) / 60000, 0), 0) AS mins_2019,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2020) / 60000, 0), 0) AS mins_2020,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2021) / 60000, 0), 0) AS mins_2021,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2022) / 60000, 0), 0) AS mins_2022,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2023) / 60000, 0), 0) AS mins_2023,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2024) / 60000, 0), 0) AS mins_2024,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2025) / 60000, 0), 0) AS mins_2025,
-    ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) BETWEEN 2013 AND 2025) / 60000, 0) AS total_mins
-FROM spotify_data_full
-GROUP BY master_metadata_album_album_name
-ORDER BY total_mins DESC;
-
-
-/*Track by year*/
-SELECT master_metadata_track_name,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2013) / 60000, 0), 0) AS mins_2013,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2014) / 60000, 0), 0) AS mins_2014,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2015) / 60000, 0), 0) AS mins_2015,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2016) / 60000, 0), 0) AS mins_2016,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2017) / 60000, 0), 0) AS mins_2017,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2018) / 60000, 0), 0) AS mins_2018,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2019) / 60000, 0), 0) AS mins_2019,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2020) / 60000, 0), 0) AS mins_2020,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2021) / 60000, 0), 0) AS mins_2021,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2022) / 60000, 0), 0) AS mins_2022,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2023) / 60000, 0), 0) AS mins_2023,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2024) / 60000, 0), 0) AS mins_2024,
-    COALESCE(ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) = 2025) / 60000, 0), 0) AS mins_2025,
-    ROUND(SUM(ms_played) FILTER (WHERE EXTRACT(YEAR FROM ts::timestamp) BETWEEN 2013 AND 2025) / 60000, 0) AS total_mins
-FROM spotify_data_full
-GROUP BY master_metadata_track_name
-ORDER BY total_mins DESC;
-
-
-
-
-
-/*Per year rankings*/
+/*Generate SQL for per year rankings*/
 WITH params AS (
     SELECT 2013 AS start_year, 2025 AS end_year
 ),
@@ -159,15 +302,20 @@ years AS (
 agg AS (
     SELECT
         string_agg(
-            'COALESCE(ROUND(MAX(CASE WHEN year = ' || y || ' THEN mins END),0),0) AS mins_' || y,
+            'COALESCE(ROUND(MAX(CASE WHEN year = ' || y ||
+            ' THEN mins END),0),0) AS mins_' || y,
             E',\n'
         ) AS mins_cols,
         string_agg(
-            'COALESCE(MAX(CASE WHEN year = ' || y || ' THEN position END), global_max.global_max_rank) AS pos_' || y,
+            'COALESCE(MAX(CASE WHEN year = ' || y || ' THEN position END),' ||
+            ' (SELECT max_position FROM max_rank_per_year WHERE year = ' || y ||
+            ') +1 ) AS pos_' || y,
             E',\n'
         ) AS pos_cols,
         string_agg(
-            'COALESCE(MAX(CASE WHEN year = ' || y || ' THEN position END), global_max.global_max_rank)',
+            'COALESCE(MAX(CASE WHEN year = ' || y || ' THEN position END),' ||
+            ' (SELECT max_position FROM max_rank_per_year WHERE year = ' || y ||
+            ') +1 )',
             ' + '
         ) AS avg_sum_expr
     FROM years
@@ -183,164 +331,23 @@ SELECT
                 ORDER BY SUM(ms_played)/60000 DESC
             ) AS position
         FROM spotify_data_full
-        WHERE EXTRACT(YEAR FROM ts::timestamp)::int BETWEEN ' || (SELECT start_year FROM params) || ' AND ' || (SELECT end_year FROM params) || '
+        WHERE EXTRACT(YEAR FROM ts::timestamp)::int BETWEEN ' ||
+            (SELECT start_year FROM params) || ' AND ' ||
+            (SELECT end_year FROM params) || '
         GROUP BY master_metadata_track_name, EXTRACT(YEAR FROM ts::timestamp)
     ),
-    global_max AS (
-        SELECT MAX(position) AS global_max_rank FROM ranked
+    max_rank_per_year AS (
+        SELECT year, MAX(position) AS max_position
+        FROM ranked
+        GROUP BY year
     )
     SELECT
         master_metadata_track_name,
         ' || (SELECT mins_cols FROM agg) || E',\n' ||
         (SELECT pos_cols FROM agg) || E',\n' ||
-        'ROUND((' || (SELECT avg_sum_expr FROM agg) || ')::numeric / ' || (SELECT COUNT(*) FROM years) || ',2) AS avg_position
+        'ROUND((' || (SELECT avg_sum_expr FROM agg) ||
+        ')::numeric / ' || (SELECT COUNT(*) FROM years) ||
+        ',2) AS avg_position
     FROM ranked
-    CROSS JOIN global_max
-    GROUP BY master_metadata_track_name, global_max.global_max_rank
+    GROUP BY master_metadata_track_name
     ORDER BY avg_position ASC;' AS pivot_sql;
-
-
-/*Podcasts position ranking*/
-WITH ranked AS (
-        SELECT
-            episode_show_name,
-            EXTRACT(YEAR FROM ts::timestamp)::int AS year,
-            SUM(ms_played)/60000 AS mins,
-            RANK() OVER (
-                PARTITION BY EXTRACT(YEAR FROM ts::timestamp)
-                ORDER BY SUM(ms_played)/60000 DESC
-            ) AS position
-        FROM spotify_data_full
-        WHERE EXTRACT(YEAR FROM ts::timestamp)::int BETWEEN 2020 AND 2025
-        GROUP BY episode_show_name, EXTRACT(YEAR FROM ts::timestamp)
-    ),
-    global_max AS (
-        SELECT MAX(position) AS global_max_rank FROM ranked
-    )
-    SELECT
-        episode_show_name,
-COALESCE(MAX(CASE WHEN year = 2020 THEN position END), global_max.global_max_rank) AS pos_2020,
-COALESCE(MAX(CASE WHEN year = 2021 THEN position END), global_max.global_max_rank) AS pos_2021,
-COALESCE(MAX(CASE WHEN year = 2022 THEN position END), global_max.global_max_rank) AS pos_2022,
-COALESCE(MAX(CASE WHEN year = 2023 THEN position END), global_max.global_max_rank) AS pos_2023,
-COALESCE(MAX(CASE WHEN year = 2024 THEN position END), global_max.global_max_rank) AS pos_2024,
-COALESCE(MAX(CASE WHEN year = 2025 THEN position END), global_max.global_max_rank) AS pos_2025,
-ROUND((COALESCE(MAX(CASE WHEN year = 2020 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2021 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2022 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2023 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2024 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2025 THEN position END), global_max.global_max_rank))::numeric / 6,2) AS avg_position
-    FROM ranked
-    CROSS JOIN global_max
-    GROUP BY episode_show_name, global_max.global_max_rank
-    ORDER BY avg_position ASC;
-
-/*Artist position rank*/
-WITH ranked AS (
-        SELECT
-            master_metadata_album_artist_name,
-            EXTRACT(YEAR FROM ts::timestamp)::int AS year,
-            SUM(ms_played)/60000 AS mins,
-            RANK() OVER (
-                PARTITION BY EXTRACT(YEAR FROM ts::timestamp)
-                ORDER BY SUM(ms_played)/60000 DESC
-            ) AS position
-        FROM spotify_data_full
-        WHERE EXTRACT(YEAR FROM ts::timestamp)::int BETWEEN 2013 AND 2025
-        GROUP BY master_metadata_album_artist_name, EXTRACT(YEAR FROM ts::timestamp)
-    ),
-    global_max AS (
-        SELECT MAX(position) AS global_max_rank FROM ranked
-    )
-    SELECT
-        master_metadata_album_artist_name,
-COALESCE(MAX(CASE WHEN year = 2013 THEN position END), global_max.global_max_rank) AS pos_2013,
-COALESCE(MAX(CASE WHEN year = 2014 THEN position END), global_max.global_max_rank) AS pos_2014,
-COALESCE(MAX(CASE WHEN year = 2015 THEN position END), global_max.global_max_rank) AS pos_2015,
-COALESCE(MAX(CASE WHEN year = 2016 THEN position END), global_max.global_max_rank) AS pos_2016,
-COALESCE(MAX(CASE WHEN year = 2017 THEN position END), global_max.global_max_rank) AS pos_2017,
-COALESCE(MAX(CASE WHEN year = 2018 THEN position END), global_max.global_max_rank) AS pos_2018,
-COALESCE(MAX(CASE WHEN year = 2019 THEN position END), global_max.global_max_rank) AS pos_2019,
-COALESCE(MAX(CASE WHEN year = 2020 THEN position END), global_max.global_max_rank) AS pos_2020,
-COALESCE(MAX(CASE WHEN year = 2021 THEN position END), global_max.global_max_rank) AS pos_2021,
-COALESCE(MAX(CASE WHEN year = 2022 THEN position END), global_max.global_max_rank) AS pos_2022,
-COALESCE(MAX(CASE WHEN year = 2023 THEN position END), global_max.global_max_rank) AS pos_2023,
-COALESCE(MAX(CASE WHEN year = 2024 THEN position END), global_max.global_max_rank) AS pos_2024,
-COALESCE(MAX(CASE WHEN year = 2025 THEN position END), global_max.global_max_rank) AS pos_2025,
-ROUND((COALESCE(MAX(CASE WHEN year = 2013 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2014 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2015 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2016 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2017 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2018 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2019 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2020 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2021 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2022 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2023 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2024 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2025 THEN position END), global_max.global_max_rank))::numeric / 13,2) AS avg_position
-    FROM ranked
-    CROSS JOIN global_max
-    GROUP BY master_metadata_album_artist_name, global_max.global_max_rank
-    ORDER BY avg_position ASC;
-
-/*Album positon rank*/
-WITH ranked AS (
-        SELECT
-            master_metadata_album_album_name, master_metadata_album_artist_name,
-            EXTRACT(YEAR FROM ts::timestamp)::int AS year,
-            SUM(ms_played)/60000 AS mins,
-            RANK() OVER (
-                PARTITION BY EXTRACT(YEAR FROM ts::timestamp)
-                ORDER BY SUM(ms_played)/60000 DESC
-            ) AS position
-        FROM spotify_data_full
-        WHERE EXTRACT(YEAR FROM ts::timestamp)::int BETWEEN 2013 AND 2025
-        GROUP BY master_metadata_album_album_name, master_metadata_album_artist_name, EXTRACT(YEAR FROM ts::timestamp)
-    ),
-    global_max AS (
-        SELECT MAX(position) AS global_max_rank FROM ranked
-    )
-    SELECT
-        master_metadata_album_album_name, master_metadata_album_artist_name,
-COALESCE(MAX(CASE WHEN year = 2013 THEN position END), global_max.global_max_rank) AS pos_2013,
-COALESCE(MAX(CASE WHEN year = 2014 THEN position END), global_max.global_max_rank) AS pos_2014,
-COALESCE(MAX(CASE WHEN year = 2015 THEN position END), global_max.global_max_rank) AS pos_2015,
-COALESCE(MAX(CASE WHEN year = 2016 THEN position END), global_max.global_max_rank) AS pos_2016,
-COALESCE(MAX(CASE WHEN year = 2017 THEN position END), global_max.global_max_rank) AS pos_2017,
-COALESCE(MAX(CASE WHEN year = 2018 THEN position END), global_max.global_max_rank) AS pos_2018,
-COALESCE(MAX(CASE WHEN year = 2019 THEN position END), global_max.global_max_rank) AS pos_2019,
-COALESCE(MAX(CASE WHEN year = 2020 THEN position END), global_max.global_max_rank) AS pos_2020,
-COALESCE(MAX(CASE WHEN year = 2021 THEN position END), global_max.global_max_rank) AS pos_2021,
-COALESCE(MAX(CASE WHEN year = 2022 THEN position END), global_max.global_max_rank) AS pos_2022,
-COALESCE(MAX(CASE WHEN year = 2023 THEN position END), global_max.global_max_rank) AS pos_2023,
-COALESCE(MAX(CASE WHEN year = 2024 THEN position END), global_max.global_max_rank) AS pos_2024,
-COALESCE(MAX(CASE WHEN year = 2025 THEN position END), global_max.global_max_rank) AS pos_2025,
-ROUND((COALESCE(MAX(CASE WHEN year = 2013 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2014 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2015 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2016 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2017 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2018 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2019 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2020 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2021 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2022 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2023 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2024 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2025 THEN position END), global_max.global_max_rank))::numeric / 13,2) AS avg_position
-    FROM ranked
-    CROSS JOIN global_max
-    GROUP BY master_metadata_album_album_name, master_metadata_album_artist_name, global_max.global_max_rank
-    ORDER BY avg_position ASC;
-
-/*Track positon rank*/
-WITH ranked AS (
-        SELECT
-            master_metadata_track_name, master_metadata_album_artist_name,
-            EXTRACT(YEAR FROM ts::timestamp)::int AS year,
-            SUM(ms_played)/60000 AS mins,
-            RANK() OVER (
-                PARTITION BY EXTRACT(YEAR FROM ts::timestamp)
-                ORDER BY SUM(ms_played)/60000 DESC
-            ) AS position
-        FROM spotify_data_full
-        WHERE EXTRACT(YEAR FROM ts::timestamp)::int BETWEEN 2013 AND 2025
-        GROUP BY master_metadata_track_name, master_metadata_album_artist_name, EXTRACT(YEAR FROM ts::timestamp)
-    ),
-    global_max AS (
-        SELECT MAX(position) AS global_max_rank FROM ranked
-    )
-    SELECT
-        master_metadata_track_name, master_metadata_album_artist_name,
-COALESCE(MAX(CASE WHEN year = 2013 THEN position END), global_max.global_max_rank) AS pos_2013,
-COALESCE(MAX(CASE WHEN year = 2014 THEN position END), global_max.global_max_rank) AS pos_2014,
-COALESCE(MAX(CASE WHEN year = 2015 THEN position END), global_max.global_max_rank) AS pos_2015,
-COALESCE(MAX(CASE WHEN year = 2016 THEN position END), global_max.global_max_rank) AS pos_2016,
-COALESCE(MAX(CASE WHEN year = 2017 THEN position END), global_max.global_max_rank) AS pos_2017,
-COALESCE(MAX(CASE WHEN year = 2018 THEN position END), global_max.global_max_rank) AS pos_2018,
-COALESCE(MAX(CASE WHEN year = 2019 THEN position END), global_max.global_max_rank) AS pos_2019,
-COALESCE(MAX(CASE WHEN year = 2020 THEN position END), global_max.global_max_rank) AS pos_2020,
-COALESCE(MAX(CASE WHEN year = 2021 THEN position END), global_max.global_max_rank) AS pos_2021,
-COALESCE(MAX(CASE WHEN year = 2022 THEN position END), global_max.global_max_rank) AS pos_2022,
-COALESCE(MAX(CASE WHEN year = 2023 THEN position END), global_max.global_max_rank) AS pos_2023,
-COALESCE(MAX(CASE WHEN year = 2024 THEN position END), global_max.global_max_rank) AS pos_2024,
-COALESCE(MAX(CASE WHEN year = 2025 THEN position END), global_max.global_max_rank) AS pos_2025,
-ROUND((COALESCE(MAX(CASE WHEN year = 2013 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2014 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2015 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2016 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2017 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2018 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2019 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2020 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2021 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2022 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2023 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2024 THEN position END), global_max.global_max_rank) + COALESCE(MAX(CASE WHEN year = 2025 THEN position END), global_max.global_max_rank))::numeric / 13,2) AS avg_position
-    FROM ranked
-    CROSS JOIN global_max
-    GROUP BY master_metadata_track_name, master_metadata_album_artist_name, global_max.global_max_rank
-    ORDER BY avg_position ASC;
